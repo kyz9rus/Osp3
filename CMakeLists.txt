@@ -3,4 +3,4 @@ project(Osp3 C)
 
 set(CMAKE_C_STANDARD 99)
 
-add_executable(Osp3 main.c)
+add_executable(Osp3 main.c ConcurrentQueue.c TMessage.h)
