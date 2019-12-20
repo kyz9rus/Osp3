@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <zconf.h>
+#include <assert.h>
 #include "ConcurrentQueue.h"
 
 #define INIT_BUFFER_SIZE 1000
@@ -21,7 +22,7 @@ long *calcFib(long *);
 
 long *calcPow(long *);
 
-long *doSort(long *);
+void *doSort(long *);
 
 // ----------------- UTIL_FUNCTIONS -----------------
 int numlen(unsigned int number) {
@@ -173,6 +174,154 @@ pthread_t readerTid, writerTid, calcTid;
 pthread_attr_t attr;
 ConcurrentQueue *queueForWriting;
 
+
+void *readTest(void *data) {
+    for (int i = 0; i < 100; i++)
+        show_queue(queueForWriting);
+}
+
+void *writeTest(void *data) {
+    for (int i = 0; i < 100; i++)
+        enqueue(queueForWriting, i);
+}
+
+pthread_t readerTestTid, writerTestTid, metricTid;
+
+void tests() {
+    {
+        queueForWriting = init_queue();
+
+        pthread_attr_init(&attr);
+        pthread_create(&readerTestTid, &attr, readTest, NULL);
+        pthread_create(&writerTestTid, &attr, writeTest, NULL);
+
+        pthread_join(readerTestTid, NULL);
+        pthread_join(writerTestTid, NULL);
+    }
+
+    {
+        long *data = calloc(7, sizeof(long));
+        data[0] = 4;
+        data[1] = 2;
+        data[2] = 1;
+        data[3] = 3;
+        data[4] = 8;
+        data[5] = 5;
+
+        doSort(data);
+
+        assert(data[0] == 1);
+        assert(data[1] == 2);
+        assert(data[2] == 3);
+        assert(data[3] == 4);
+        assert(data[4] == 5);
+        assert(data[5] == 8);
+    }
+
+    {
+        long *data = calloc(1, sizeof(long)), *result;
+
+        data[0] = 5;
+        result = calcFib(data);
+        assert(result[0] == (long) 8);
+
+        data[0] = 9;
+        result = calcFib(data);
+        assert(result[0] == (long) 55);
+    }
+
+    {
+        long *data = calloc(2, sizeof(long)), *result;
+        data[0] = 5;
+        data[1] = 2;
+
+        result = calcPow(data);
+        assert(result[0] == 25);
+
+        data[0] = 2;
+        data[1] = 5;
+        result = calcPow(data);
+        assert(result[0] == 32);
+    }
+
+    {
+        int a = 123, result;
+        result = numlen(a);
+        assert(result == 3);
+
+        a = 1;
+        result = numlen(a);
+        assert(result == 1);
+
+        a = 10231;
+        result = numlen(a);
+        assert(result == 5);
+    }
+
+    {
+        char *string = "12345678";
+        int result;
+
+        result = indexOf(string, '2');
+        assert(result == 1);
+
+        result = indexOf(string, '8');
+        assert(result == 7);
+    }
+
+    {
+        char *string = "FIBONACCI";
+        EType result = stringToEType(string);
+        assert(result == FIBONACCI);
+
+        string = "POW";
+        result = stringToEType(string);
+        assert(result == POW);
+
+        string = "BUBBLE_SORT_UINT64";
+        result = stringToEType(string);
+        assert(result == BUBBLE_SORT_UINT64);
+
+        string = "STOP";
+        result = stringToEType(string);
+        assert(result == STOP);
+    }
+
+    {
+        char string[] = "25 12 3 52 9";
+        long *data = convertParameters(string);
+        assert(data[0] == 25);
+        assert(data[4] == 9);
+    }
+
+    {
+        long *data = calloc(1, sizeof(long));
+        data[0] = 123;
+        TMessage *tMessage = calloc(1, sizeof(TMessage));
+        tMessage->Type = 0;
+        tMessage->Data = data;
+
+        TMessage *tMessage2 = calloc(1, sizeof(TMessage));
+        tMessage2->Type = 1;
+        tMessage2->Data = data;
+
+        TMessage *tMessage3 = calloc(1, sizeof(TMessage));
+        tMessage3->Type = 3;
+        tMessage3->Data = data;
+
+        queueForWriting = init_queue();
+
+        enqueue(queueForWriting, tMessage);
+        enqueue(queueForWriting, tMessage2);
+        enqueue(queueForWriting, tMessage3);
+
+        pthread_create(&writerTid, &attr, writeCustom, NULL);
+        pthread_join(writerTid, NULL);
+        show_queue(queueForWriting);
+    }
+
+}
+
 int main(int argc, char *argv[]) {
     pthread_attr_init(&attr);
 
@@ -183,6 +332,8 @@ int main(int argc, char *argv[]) {
     pthread_create(&readerTid, &attr, reader, NULL);
     pthread_join(readerTid, NULL);
     pthread_join(writerTid, NULL);
+
+//    tests();
 }
 
 long *calcFib(long *data) {
@@ -206,7 +357,7 @@ long *calcPow(long *data) {
     return data;
 }
 
-long *doSort(long *data) {
+void *doSort(long *data) {
     int n = size(data);
 
     for (int i = 0; i < n - 1; i++)
