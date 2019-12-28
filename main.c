@@ -23,14 +23,6 @@ typedef struct {
 }
         TMetricData;
 
-typedef struct {
-    pthread_t tid;
-    int num;
-    int mode;
-    TMetricData metric;
-}
-        TThreadPool;
-
 #define metrix_count 5
 char *metrix_name[metrix_count] =
         {
@@ -367,7 +359,7 @@ void *calc(void *data) {
             tMessage->Data = calcPow(tMessage->Data);
 
             clock_gettime(CLOCK_MONOTONIC, &end);
-            metric_add(metrix + FIBONACCI, &start, &end);
+            metric_add(metrix + POW, &start, &end);
             break;
         case 2:
             clock_gettime(CLOCK_MONOTONIC, &start);
@@ -592,10 +584,10 @@ int main(int argc, char *argv[]) {
 
     pthread_join(readerTid, NULL);
     pthread_join(writerTid, NULL);
-    if ((errno = pthread_join(metricTid, NULL)) != 0) {
-        perror("main: pthread_join()");
-        exit(EXIT_FAILURE);
-    }
+//    if ((errno = pthread_join(metricTid, NULL)) != 0) {
+//        perror("main: pthread_join()");
+//        exit(EXIT_FAILURE);
+//    }
 
 //    tests();
 }
