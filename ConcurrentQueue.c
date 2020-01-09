@@ -81,7 +81,7 @@ bool enqueue(ConcurrentQueue *q, TMessage *tMessage){
     return true;
 }
 
-TMessage *dequeue(ConcurrentQueue *q) {
+TMessage *dequeueCustom(ConcurrentQueue *q) {
     pointer_t head, tail, next, tmp;
 
     while (1) {

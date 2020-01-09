@@ -98,6 +98,8 @@ EType stringToEType(char *string) {
         return BUBBLE_SORT_UINT64;
     else if (strcmp(string, "STOP") == 0)
         return STOP;
+
+    return (EType) NULL;
 }
 
 EType createTMessageType(char *message) {
@@ -192,7 +194,7 @@ void swap(long *val1, long *val2) {
 
 void writeMas(FILE *file, TMessage *tMessage) {
     for (int i = 0; i < size(tMessage->Data); i++)
-        fprintf(file, "%hhu ", tMessage->Data[i]);
+        fprintf(file, "%ld ", tMessage->Data[i]);
 }
 
 // ------------ END_UTIL_FUNCTIONS ---------------------
@@ -305,7 +307,7 @@ long *calcPow(long *data) {
             result = 1;
     }
 
-    data = (long *) malloc(strlen(data));
+    data = (long *) malloc(strlen((const char *) data));
     *data = result;
     return data;
 }
@@ -338,6 +340,7 @@ void *reader() {
         pthread_join(calcTid, NULL); // ?
     } while (1);
 
+    return NULL;
 }
 
 void *calc(void *data) {
@@ -371,9 +374,11 @@ void *calc(void *data) {
             break;
     }
 
-    tMessage->Size = numlen(tMessage->Data);
+    tMessage->Size = numlen((unsigned int) tMessage->Data);
 
     enqueue(queueForWriting, tMessage);
+
+    return NULL;
 }
 
 void *writeCustom() {
@@ -382,7 +387,7 @@ void *writeCustom() {
 
     TMessage *tMessage;
     while (1) {
-        tMessage = dequeue(queueForWriting);
+        tMessage = dequeueCustom(queueForWriting);
         clock_gettime(CLOCK_MONOTONIC, &start);
 
         if (tMessage != NULL) {
@@ -409,16 +414,25 @@ void *writeCustom() {
     }
     exit:
     fclose(file);
+
+    return NULL;
 }
 
 void *readTest(void *data) {
     for (int i = 0; i < 100; i++)
         show_queue(queueForWriting);
+    return NULL;
 }
 
 void *writeTest(void *data) {
-    for (int i = 0; i < 100; i++)
-        enqueue(queueForWriting, i);
+    for (int i = 0; i < 100; i++) {
+        TMessage *tMessage = createTMessage();
+        long *data1 = calloc(1, sizeof(long));
+        data1[0] = i;
+        tMessage->Data = data1;
+        enqueue(queueForWriting, tMessage);
+    }
+    return NULL;
 }
 
 pthread_t readerTestTid, writerTestTid, metricTid;

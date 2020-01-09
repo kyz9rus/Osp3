@@ -23,6 +23,6 @@ void free_queue(ConcurrentQueue *);
 
 bool enqueue(ConcurrentQueue *q, TMessage *tMessage);
 
-TMessage *dequeue(ConcurrentQueue *q);
+TMessage *dequeueCustom(ConcurrentQueue *q);
 
 void show_queue(ConcurrentQueue *);
